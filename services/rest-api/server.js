@@ -3,6 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const userRoutes = require('./routes/users');
+const authRoutes = require('./routes/auth');
+const teamRoutes = require('./routes/teams');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -32,8 +34,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/auth/public-key', (req, res) => {
+  const publicKey = process.env.JWT_PUBLIC_KEY;
+  if (!publicKey) {
+    return res.status(500).json({ error: 'Public key not configured' });
+  }
+  // Kirim sebagai string text biasa
+  res.status(200).send(publicKey);
+});
+
 // Routes
+app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/teams', teamRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -13,7 +13,17 @@
     "install:gateway": "cd api-gateway && npm install",
     "install:frontend": "cd frontend-app && npm install"
   },
-  "keywords": ["microservices", "rest", "graphql", "api-gateway", "nextjs"],
+  "keywords": [
+    "microservices",
+    "rest",
+    "graphql",
+    "api-gateway",
+    "nextjs"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.2"
+  }
 }
