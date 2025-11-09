@@ -9,6 +9,17 @@ export const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  // Lakukan sesuatu jika ada error pada request
+  return Promise.reject(error);
+});
+
 // User API calls
 export const userApi = {
   getUsers: () => apiClient.get('/api/users'),

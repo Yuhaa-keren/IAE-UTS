@@ -8,9 +8,14 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
+  // Ambil token dari local storage
+  const token = localStorage.getItem('token');
+  
+  // Kembalikan headers baru dengan token authorization
   return {
     headers: {
       ...headers,
+      authorization: token ? `Bearer ${token}` : "",
     }
   }
 });
