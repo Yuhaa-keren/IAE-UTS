@@ -9,8 +9,6 @@ const axios = require('axios'); // <-- Baru
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-let publicKey = null;
-const USER_SERVICE_URL = process.env.REST_API_URL || 'http://localhost:3001';
 
 // Security middleware
 app.use(helmet());
