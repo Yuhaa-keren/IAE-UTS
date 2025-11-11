@@ -3,6 +3,11 @@ const { ApolloServer } = require('apollo-server-express');
 const { PubSub } = require('graphql-subscriptions');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
+const { createServer } = require('http');
+const { ApolloServerPluginDrainHttpServer } = require('apollo-server-core');
+const { makeExecutableSchema } = require('@graphql-tools/schema');
+const { WebSocketServer } = require('ws');
+const { useServer } = require('graphql-ws/lib/use/ws');
 
 const app = express();
 const pubsub = new PubSub();
@@ -150,20 +155,39 @@ const resolvers = {
 };
 
 async function startServer() {
-  // Create Apollo Server
+  // Buat skema (menggabungkan typeDefs dan resolvers)
+  const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+  // Buat HTTP server
+  const httpServer = createServer(app);
+
+  // Buat WebSocket server
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql', // Sesuaikan dengan path endpoint GraphQL Anda
+  });
+
+  // Setup server subscription (menggunakan schema)
+  const serverCleanup = useServer({ schema }, wsServer);
+
+  // Buat Apollo Server dengan plugin
   const server = new ApolloServer({
-    typeDefs,
-    resolvers,
+    schema,
     context: ({ req }) => {
+      // Terima header auth dari API Gateway
       const user = req.headers['x-user'] ? JSON.parse(req.headers['x-user']) : null;
       return { user, pubsub };
     },
     plugins: [
+      // Plugin untuk mematikan HTTP server
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+
+      // Plugin untuk membersihkan koneksi subscription
       {
-        requestDidStart() {
+        async serverWillStart() {
           return {
-            willSendResponse(requestContext) {
-              console.log(`GraphQL ${requestContext.request.operationName || 'Anonymous'} operation completed`);
+            async drainServer() {
+              await serverCleanup.dispose();
             },
           };
         },
@@ -175,16 +199,13 @@ async function startServer() {
   server.applyMiddleware({ app, path: '/graphql' });
 
   const PORT = process.env.PORT || 4000;
-  
-  const httpServer = app.listen(PORT, () => {
-    console.log(`🚀 GraphQL API Server running on port ${PORT}`);
-    console.log(`🔗 GraphQL endpoint: http://localhost:${PORT}${server.graphqlPath}`);
-    console.log(`📊 GraphQL Playground: http://localhost:${PORT}${server.graphqlPath}`);
-    console.log(`📡 Subscriptions ready`);
-  });
 
-  // Setup subscriptions
-  server.installSubscriptionHandlers(httpServer);
+  // Jalankan HTTP server (bukan app.listen lagi)
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 GraphQL API Server running on port ${PORT}`);
+    console.log(`🚀 GraphQL endpoint: http://localhost:${PORT}${server.graphqlPath}`);
+    console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.graphqlPath}`);
+  });
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
