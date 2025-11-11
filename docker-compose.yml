@@ -9,6 +9,43 @@ services:
     environment:
       - PORT=3001
       - NODE_ENV=development
+      - JWT_PUBLIC_KEY=|
+        -----BEGIN PUBLIC KEY-----
+        MIIBCgKCAQEAr1/P2gopz9HvZgK3W75WzG49SQiOrpSELHcr0XYwlqUFKT18QZW8
+        N4HRgJt8LzYCHsma41yBKRh8aB/IN1popc4LwlYiJ9q5h6ZJys0Amd7P99POuv94
+        pR3X4PXy5vj+SHUkhkzWRStKdq08ZoT3eHKcj7ytzHrpf03AoTq5xRJQZyvn0twL
+        JtfFmDMqXVjSSb87xGt6zUY/dtofY6Bpcra0YbTjgrRCNftyf9IUo2Cig6R5Eqsy
+        uwR7p9bXnf5bQjv+9x8Xe88h+xgjwWaeff/aFGUnujMXLQEr7DC3jRZRknnOOOHI
+        3w3Ov9u77H/FQrJaZVxC93p4y/3lCRK6DQIDAQAB
+        -----END PUBLIC KEY-----
+      - JWT_PRIVATE_KEY=|
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpAIBAAKCAQEAr1/P2gopz9HvZgK3W75WzG49SQiOrpSELHcr0XYwlqUFKT18
+        QZW8N4HRgJt8LzYCHsma41yBKRh8aB/IN1popc4LwlYiJ9q5h6ZJys0Amd7P99PO
+        uv94pR3X4PXy5vj+SHUkhkzWRStKdq08ZoT3eHKcj7ytzHrpf03AoTq5xRJQZyvn
+        0twLJtfFmDMqXVjSSb87xGt6zUY/dtofY6Bpcra0YbTjgrRCNftyf9IUo2Cig6R5
+        EqsyuwR7p9bXnf5bQjv+9x8Xe88h+xgjwWaeff/aFGUnujMXLQEr7DC3jRZRknnO
+        OOHI3w3Ov9u77H/FQrJaZVxC93p4y/3lCRK6DQIDAQABAoIBAAhCDLmJrPpaOlml
+        Wxj414F812nu+zkBSVAGtIuCcztEvf95I7a65EgA1uqlZ62Zb3Qfrilym6phusn0
+        ZSsmGLNmBmu6PpV92SqoC+V+zb5xHX3f/WYUzYuI4jd3nV5+7wpeab/hMl3Dchgw
+        hB2XuUd0riaejdiJGSGjeaSd7U14QUJ66p6TRTkzDlveixZE2qvr3g2+4MFUr5cA
+        ZSL6v0xm7VpgsY4wAVkSVHtD0HVzPXMPtY2nb6d+VyECAZXyf6KWZUaIppI5r2do
+        q9bSGqb0EkBJQuTKa1NJqWNDj8Q7HpIH4WDuAbTH8fVVH6pCOaIgXNqBmrysiyrw
+        y+W1EEkCgYEA6IJ/RJyNlnZ0R2Ec2+D9fomkSLkFnDLfySXNKSoWvc5yllcWm+Pe
+        +VPu0qtMNal1j9wIXon7IiERdUQSLRViyS9kquhejW5aoDT78+V6Osv8zLmthtGi
+        JyC7CI2am1k+gDeihSf7q2+RtqekgMFR8CBOUSs9SxdN51UvFKugq0sCgYEAwReY
+        I6tIVXV3mtdIKpTqmIn5RYi/wGPcrhamv9ukW+jEt+Xyu9nEkPb7Eyvu6lG1va76
+        yZ9V3evo2k/DyZAREeaKW3JN+CT+PlLLyF9+xCrmlN+m8IqNRyzgYQLsy8DLJGFw
+        osGlBnl34pC+Mxcc6yvZFm2D55flklYgX1aQQQcCgYEAh3ipgKea06U3APPzZaXE
+        7XpzLzAmtajqvP96d1afo33rQ++AK9psa2ddCoBmSgnvhp+UfMj2ex87VdEQqhYA
+        1en4RKBZnxxCT4AvoR7+xc1fAUXadmgki5nFgClJgORRx1EjL2RpfaznAL7S2XZK
+        MJgSKbcA4oS0jmoSoX+SgNsCgYBg7XkfnqGG1JqfjaXaSjqhK9GHiCfJadejRBec
+        g6Mzx9rH/ZQlnCFCK9jJPOqHkVDL0QRvJZ6y8fNHc3byvXD0LWgSk4R0Jg3CN0m4
+        Ycd+rZJl9QcWBFb6/Zn82L0JYtQWhRtHeDFg2KTHhKUVfGq12qL00TC/ls5U8Qr7
+        ELcFDQKBgQDFFurwQ9XoEnedWueU1yOGkbipDvQcvTa+Ij/lEXx87FtbF++MUGNf
+        s8sWD0O5fgo8ePR4dz0oTeal0GoXf5lsvvl+7z79YQ3HHdav+acT2q6wHCKcZVYc
+        2HO1BAjgqVPfuYnNxrChZu5fBVT9FBJqTeIB3iSTLVGn92rFrZ1lPA==
+        -----END RSA PRIVATE KEY-----
     volumes:
       - ./services/rest-api:/app
       - /app/node_modules
