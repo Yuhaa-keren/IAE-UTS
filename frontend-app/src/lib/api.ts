@@ -30,3 +30,11 @@ export const userApi = {
     apiClient.put(`/api/users/${id}`, userData),
   deleteUser: (id: string) => apiClient.delete(`/api/users/${id}`),
 };
+
+export const authApi = {
+  login: (credentials: { email: string; password: string }) =>
+    apiClient.post('/api/auth/login', credentials),
+  
+  register: (userData: { name: string; email: string; password: string }) =>
+    apiClient.post('/api/auth/register', userData),
+};
