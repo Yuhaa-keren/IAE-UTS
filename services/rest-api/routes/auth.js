@@ -1,5 +1,6 @@
 // services/rest-api/routes/auth.js
 const express = require('express');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
@@ -61,8 +62,8 @@ router.post('/login', async (req, res) => {
       name: user.name
     };
     
-    const privateKey = process.env.JWT_PRIVATE_KEY;
-
+    const privateKey = fs.readFileSync('private.key', 'utf8');
+    
     // Gunakan algoritma RS256 karena kita pakai RSA
     const token = jwt.sign(payload, privateKey, { 
       algorithm: 'RS256',

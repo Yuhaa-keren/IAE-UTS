@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -35,16 +36,16 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/auth/public-key', (req, res) => {
-  const publicKey = process.env.JWT_PUBLIC_KEY;
-  if (!publicKey) {
-    return res.status(500).json({ error: 'Public key not configured' });
+  try {
+    const publicKey = fs.readFileSync('public.key', 'utf8');
+    res.status(200).send(publicKey);
+  } catch (error) {
+    res.status(500).json({ error: 'Public key file not found' });
   }
-  // Kirim sebagai string text biasa
-  res.status(200).send(publicKey);
 });
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
 

@@ -1,34 +1,32 @@
-// frontend-app/src/lib/apollo-client.tsx
 'use client';
 
 import { ApolloClient, InMemoryCache, ApolloProvider, createHttpLink, split } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
-import { GraphQLWsLink } from '@apollo/client/link/ws';
+// PERBAIKAN ADA DI BARIS INI (menggunakan /link/subscriptions):
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'; 
 import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 
-// 1. Link HTTP (untuk queries dan mutations)
+// 1. Link HTTP
 const httpLink = createHttpLink({
-  uri: process.env.NEXT_PUBLIC_API_GATEWAY_URL + '/graphql' || 'http://localhost:3000/graphql',
+  uri: process.env.NEXT_PUBLIC_API_GATEWAY_URL ? `${process.env.NEXT_PUBLIC_API_GATEWAY_URL}/graphql` : 'http://localhost:3000/graphql',
 });
 
-// 2. Link WebSocket (untuk subscriptions)
-// Kita harus ganti http:// dengan ws://
+// 2. Link WebSocket
 const wsUrl = (process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3000')
   .replace(/^http/, 'ws') + '/graphql';
 
-const wsLink = new GraphQLWsLink(createClient({
+const wsLink = typeof window !== "undefined" ? new GraphQLWsLink(createClient({
   url: wsUrl,
   connectionParams: () => {
-    // Kita juga bisa mengirim token via koneksi websocket
     const token = localStorage.getItem('token');
     return {
       Authorization: token ? `Bearer ${token}` : '',
     };
   },
-}));
+})) : null;
 
-// 3. Link Autentikasi (untuk menambahkan token ke header HTTP)
+// 3. Link Autentikasi
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem('token');
   return {
@@ -39,24 +37,24 @@ const authLink = setContext((_, { headers }) => {
   }
 });
 
-// 4. "Split" Link
-// Ini akan mengarahkan request ke link yang benar
-// 'wsLink' untuk subscriptions, 'authLink.concat(httpLink)' untuk lainnya
-const splitLink = split(
-  ({ query }) => {
-    const definition = getMainDefinition(query);
-    return (
-      definition.kind === 'OperationDefinition' &&
-      definition.operation === 'subscription'
-    );
-  },
-  wsLink, // <-- Jika subscription
-  authLink.concat(httpLink) // <-- Jika query atau mutation
-);
+// 4. Split Link (Hanya gunakan wsLink jika di browser/window ada)
+const splitLink = typeof window !== "undefined" && wsLink != null
+  ? split(
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+          definition.kind === 'OperationDefinition' &&
+          definition.operation === 'subscription'
+        );
+      },
+      wsLink,
+      authLink.concat(httpLink)
+    )
+  : authLink.concat(httpLink);
 
-// 5. Buat Client
+// 5. Client
 const client = new ApolloClient({
-  link: splitLink, // Gunakan splitLink yang baru
+  link: splitLink,
   cache: new InMemoryCache(),
 });
 
