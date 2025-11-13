@@ -25,18 +25,20 @@ app.use(cors({
 
 // In-memory data store (replace with real database in production)
 let tasks = [
+  // Task contoh (milik admin)
   {
     id: '1',
-    title: 'Desain UI/UX',
-    description: 'Selesaikan desain untuk halaman login',
-    status: 'BACKLOG', // BACKLOG, TODO, IN_PROGRESS, DONE
-    assigneeId: '1',
+    title: 'Tugas Admin',
+    description: 'Ini tugas awal',
+    status: 'BACKLOG',
+    assigneeId: 'admin-1', 
     teamId: 'team1',
+    creatorId: 'admin-1', // <-- Field baru
     createdAt: new Date().toISOString(),
   }
 ];
 
-// GraphQL type definitions
+// 1. Update Schema GraphQL
 const typeDefs = `
   enum TaskStatus {
     BACKLOG
@@ -52,34 +54,35 @@ const typeDefs = `
     status: TaskStatus!
     assigneeId: ID
     teamId: ID!
+    creatorId: ID!  # <-- Field baru untuk tracking pemilik
     createdAt: String!
   }
 
   type Query {
-    # Dapatkan semua task untuk satu tim
     tasks(teamId: ID!): [Task!]!
-    # Dapatkan satu task spesifik
     task(id: ID!): Task
   }
 
   type Mutation {
     createTask(teamId: ID!, title: String!, description: String): Task!
     updateTaskStatus(id: ID!, status: TaskStatus!): Task!
-    assignTask(id: ID!, assigneeId: ID!): Task!
+    
+    # Mutation baru untuk menghapus
+    deleteTask(id: ID!): Boolean! 
   }
 
   type Subscription {
-    # Terjadi ketika task baru dibuat
     taskAdded(teamId: ID!): Task!
-    # Terjadi ketika status task berubah
     taskUpdated(teamId: ID!): Task!
+    taskDeleted(teamId: ID!): ID! # Notifikasi delete
   }
 `;
 
 const TASK_ADDED = 'TASK_ADDED';
 const TASK_UPDATED = 'TASK_UPDATED';
+const TASK_DELETED = 'TASK_DELETED'; // Event baru
 
-// GraphQL resolvers
+// 2. Update Resolvers
 const resolvers = {
   Query: {
     tasks: (_, { teamId }) => tasks.filter(task => task.teamId === teamId),
@@ -87,70 +90,83 @@ const resolvers = {
   },
 
   Mutation: {
-    createTask: (_, { teamId, title, description }) => {
+    createTask: (_, { teamId, title, description }, { user }) => {
+      // Cek login
+      if (!user) throw new Error('Anda harus login untuk membuat task');
+
       const newTask = {
         id: uuidv4(),
         teamId,
         title,
         description: description || '',
         status: 'BACKLOG',
-        assigneeId: null,
+        assigneeId: user.id, // Otomatis assign ke diri sendiri
+        creatorId: user.id,  // <-- SIMPAN PEMBUATNYA
         createdAt: new Date().toISOString(),
       };
       tasks.push(newTask);
       
-      // Publish ke subscription
       pubsub.publish(TASK_ADDED, { taskAdded: newTask });
-      
       return newTask;
     },
 
-    updateTaskStatus: (_, { id, status }) => {
+    updateTaskStatus: (_, { id, status }, { user }) => {
+      if (!user) throw new Error('Unauthorized');
+      
       const taskIndex = tasks.findIndex(task => task.id === id);
       if (taskIndex === -1) throw new Error('Task not found');
 
       tasks[taskIndex].status = status;
       const updatedTask = tasks[taskIndex];
 
-      // Publish ke subscription
       pubsub.publish(TASK_UPDATED, { taskUpdated: updatedTask });
-      
       return updatedTask;
     },
     
-    assignTask: (_, { id, assigneeId }) => {
+    // --- LOGIKA DELETE DENGAN OTORISASI ---
+    deleteTask: (_, { id }, { user }) => {
+      // 1. Cek Login
+      if (!user) throw new Error('Unauthorized: Harap login');
+
       const taskIndex = tasks.findIndex(task => task.id === id);
       if (taskIndex === -1) throw new Error('Task not found');
       
-      tasks[taskIndex].assigneeId = assigneeId;
-      const updatedTask = tasks[taskIndex];
+      const task = tasks[taskIndex];
 
-      // Publish ke subscription
-      pubsub.publish(TASK_UPDATED, { taskUpdated: updatedTask });
+      // 2. LOGIKA OTORISASI (Authorization)
+      const isAdmin = user.role === 'admin';
+      const isOwner = task.creatorId === user.id;
+
+      // Jika BUKAN admin DAN BUKAN pemilik, tolak!
+      if (!isAdmin && !isOwner) {
+        throw new Error('Forbidden: Anda tidak berhak menghapus task ini!');
+      }
+
+      // 3. Hapus Task
+      const teamId = task.teamId;
+      tasks.splice(taskIndex, 1);
+
+      // Notifikasi real-time
+      pubsub.publish('TASK_DELETED', { taskDeleted: id, teamId }); // Pastikan event name string-nya sama dengan di Subscription
       
-      return updatedTask;
-    }
+      return true;
+    },
   },
 
   Subscription: {
     taskAdded: {
-      // Filter agar subscription hanya dikirim ke tim yang relevan
       subscribe: (parent, { teamId }) => pubsub.asyncIterator(TASK_ADDED),
-      resolve: (payload) => {
-        // Ini hanya contoh, idealnya Anda filter berdasarkan teamId
-        // if (payload.taskAdded.teamId === teamId) {
-        //   return payload.taskAdded;
-        // }
-        return payload.taskAdded;
-      },
+      resolve: (payload) => payload.taskAdded,
     },
     taskUpdated: {
       subscribe: (parent, { teamId }) => pubsub.asyncIterator(TASK_UPDATED),
-      resolve: (payload) => {
-        // Filter juga di sini
-        return payload.taskUpdated;
-      },
+      resolve: (payload) => payload.taskUpdated,
     },
+    taskDeleted: {
+      // Filter notifikasi berdasarkan teamId
+      subscribe: (parent, { teamId }) => pubsub.asyncIterator(TASK_DELETED),
+      resolve: (payload) => payload.taskDeleted
+    }
   },
 };
 
